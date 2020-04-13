@@ -39,6 +39,7 @@ contract Victim {
          // Call the sender's fallback function with 1 eth.
          // Note that we fail to specify how much gas is available within ().
          // So, all gas provided by the original caller is available to be consumed.
+         // Contracts do not pay any gas fees in the current version of Ethereum.
          msg.sender.call.value(transferAmt)("");
          // clear the balance
          balance = 0;
