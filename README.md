@@ -85,6 +85,7 @@ contract Attacker {
   }
 
   // collects Ether for counter = 1..9.
+  // Plus 1 from above and we receive 10 Eth for clearing the balance.
   function() payable external {
     counter++;
     emit fallbackCalled(counter,msg.value);
