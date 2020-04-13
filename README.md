@@ -36,8 +36,9 @@ contract Victim {
      function withdraw() public {
          require(balance > 0);
          uint transferAmt = 1 ether;
-         // call the sender's fallback function with 1 eth
-         // note we fail to specify how much gas is available within ()
+         // Call the sender's fallback function with 1 eth.
+         // Note that we fail to specify how much gas is available within ().
+         // So, all gas provided by the original caller is available to be consumed.
          msg.sender.call.value(transferAmt)("");
          // clear the balance
          balance = 0;
